@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0">
+	<parent>
+		<artifactId>biometrics-samples</artifactId>
+		<groupId>com.neurotec.samples</groupId>
+		<version>13.0.0.0</version>
+	</parent>
+	<modelVersion>4.0.0</modelVersion>
+	<artifactId>simple-fingers-sample</artifactId>
+	<name>Simple Fingers Sample</name>
+	<build>
+		<resources>
+			<resource>
+				<targetPath>${project.build.outputDirectory}/images</targetPath>
+				<directory>${basedir}/../../../../Resources</directory>
+				<includes>
+					<include>Logo16x16.png</include>
+				</includes>
+			</resource>
+		</resources>
+		<plugins>
+			<plugin>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>standalone</id>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<outputDirectory>${product.bin.directory}</outputDirectory>
+					<finalName>Java</finalName>
+					<appendAssemblyId>false</appendAssemblyId>
+					<descriptors>
+						<descriptor>src/main/assembly/standalone.xml</descriptor>
+					</descriptors>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+	<dependencies>
+		<dependency>
+			<groupId>com.neurotec</groupId>
+			<artifactId>neurotec-biometrics-client</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.neurotec</groupId>
+			<artifactId>neurotec-biometrics-gui</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.neurotec</groupId>
+			<artifactId>neurotec-devices</artifactId>
+		</dependency>
+	</dependencies>
+	<properties>
+		<product.root.directory>${basedir}/../../../..</product.root.directory>
+		<project.package.name>com.neurotec.samples</project.package.name>
+		<project.main.class>com.neurotec.samples.SimpleFingersApplication</project.main.class>
+	</properties>
+</project>

@@ -1,0 +1,15 @@
+Manifest-Version: 1.0
+Specification-Title: Simple Fingers Sample
+Specification-Vendor: Neurotechnology
+Specification-Version: unspecified
+Implementation-Title: Simple Fingers Sample
+Implementation-Version: unspecified
+Implementation-Vendor: Neurotechnology
+Codebase: *
+Permissions: all-permissions
+Class-Path: neurotec-core.jar neurotec-licensing.jar neurotec-gui.jar ne
+ urotec-media.jar neurotec-media-processing.jar neurotec-biometrics.jar 
+ neurotec-biometrics-client.jar neurotec-biometrics-gui.jar neurotec-dev
+ ices.jar jna.jar flatlaf.jar samples-utils.jar 
+Main-Class: com.neurotec.samples.SimpleFingersApplication
+

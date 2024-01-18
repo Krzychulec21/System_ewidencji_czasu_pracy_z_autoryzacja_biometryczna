@@ -1,0 +1,3 @@
+rootProject.name = 'simple-fingers-sample'
+include 'samples-utils'
+project(':samples-utils').projectDir = new File("../../../Common/Java/utils")

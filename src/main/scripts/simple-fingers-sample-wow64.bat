@@ -1,0 +1,1 @@
+%SystemRoot%\SysWOW64\javaw -jar simple-fingers-sample.jar

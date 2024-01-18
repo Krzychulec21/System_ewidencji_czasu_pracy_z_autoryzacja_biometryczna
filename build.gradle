@@ -1,0 +1,22 @@
+description = "Simple Fingers Sample"
+
+apply plugin: 'application'
+apply from: "../../../Common/Java/buildCommon/common.gradle"
+mainClassName =  "com.neurotec.samples.SimpleFingersApplication";
+
+dependencies {
+	implementation ":neurotec-core"
+	implementation ":neurotec-licensing"
+	implementation ":neurotec-gui"
+	implementation ":neurotec-media"
+	implementation ":neurotec-media-processing"
+	implementation ":neurotec-biometrics"
+	implementation ":neurotec-biometrics-client"
+	implementation ":neurotec-biometrics-gui"
+	implementation ":neurotec-devices"
+	implementation ":jna"
+	implementation project.modules."flatlaf"
+	implementation project(":samples-utils")
+}
+
+apply from: "../../../Common/Java/buildCommon/run.gradle"
