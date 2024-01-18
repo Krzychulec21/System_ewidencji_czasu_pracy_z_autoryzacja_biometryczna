@@ -13,11 +13,14 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.Enumeration;
 import java.util.List;
 
 import javax.swing.BorderFactory;
@@ -52,6 +55,8 @@ import com.neurotec.samples.swing.ImageThumbnailFileChooser;
 import com.neurotec.samples.util.Utils;
 import com.neurotec.swing.NViewZoomSlider;
 import com.neurotec.util.concurrent.CompletionHandler;
+import hibernate.dao.EmployeeDao;
+import hibernate.entity.Employee;
 
 public final class IdentifyFinger extends BasePanel implements ActionListener {
 
@@ -67,6 +72,7 @@ public final class IdentifyFinger extends BasePanel implements ActionListener {
 
 	private NSubject subject;
 	private final List<NSubject> subjects;
+	private final List<Employee> employees;
 	private NFingerView view;
 
 	private final EnrollHandler enrollHandler = new EnrollHandler();
@@ -111,31 +117,60 @@ public final class IdentifyFinger extends BasePanel implements ActionListener {
 	public IdentifyFinger() {
 		super();
 		subjects = new ArrayList<NSubject>();
+		EmployeeDao dao = new EmployeeDao();
+		employees = dao.getEmployees();
 		requiredLicenses = new ArrayList<String>();
 		requiredLicenses.add("Biometrics.FingerExtraction");
 		requiredLicenses.add("Biometrics.FingerMatching");
 		optionalLicenses = new ArrayList<String>();
 		optionalLicenses.add("Images.WSQ");
-	}
+		try {
+			openTemplates();
+		} catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
 	// ===========================================================
 	// Private methods
 	// ===========================================================
 
 	private void openTemplates() throws IOException {
-		if (fcGallery.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-			((DefaultTableModel) tableResults.getModel()).setRowCount(0);
-			subjects.clear();
+//		if (fcGallery.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+//			((DefaultTableModel) tableResults.getModel()).setRowCount(0);
+//			subjects.clear();
+//
+//			// Create subjects from selected templates.
+//			for (File file : fcGallery.getSelectedFiles()) {
+//				NSubject s = NSubject.fromFile(file.getAbsolutePath());
+//				s.setId(file.getName());
+//				subjects.add(s);
+//			}
+//			lblCount.setText(String.valueOf(subjects.size()));
+//		}
+//		updateControls();
 
-			// Create subjects from selected templates.
-			for (File file : fcGallery.getSelectedFiles()) {
-				NSubject s = NSubject.fromFile(file.getAbsolutePath());
-				s.setId(file.getName());
-				subjects.add(s);
-			}
-			lblCount.setText(String.valueOf(subjects.size()));
+//		File folder = new File(SimpleFingersApplication.path);
+//		File[] files = folder.listFiles();
+//
+//        assert files != null;
+//        for (File file: files) {
+//			NSubject s = NSubject.fromFile(file.getAbsolutePath());
+//			s.setId(file.getName());
+//			subjects.add(s);
+//		}
+
+		for (Employee emp: employees) {
+			NSubject s = NSubject.fromFile(emp.getFingerprint());
+			s.setId(emp.getId().toString());
+			subjects.add(s);
 		}
-		updateControls();
+
+		for (NSubject sub: subjects) {
+			System.out.println(sub.getId());
+		}
+
+//		System.out.println(file.toString());
 	}
 
 	private void openProbe() throws IOException {
@@ -215,26 +250,26 @@ public final class IdentifyFinger extends BasePanel implements ActionListener {
 			centerPanel.setLayout(new BorderLayout());
 			mainPanel.add(centerPanel, BorderLayout.CENTER);
 			{
-				northPanel = new JPanel();
-				northPanel.setBorder(BorderFactory.createTitledBorder("Templates loading"));
-				northPanel.setLayout(new FlowLayout(FlowLayout.LEADING));
-				centerPanel.add(northPanel, BorderLayout.NORTH);
-				{
-					btnOpenTemplates = new JButton();
-					btnOpenTemplates.setText("Load");
-					btnOpenTemplates.addActionListener(this);
-					northPanel.add(btnOpenTemplates);
-				}
-				{
-					templatesLabel = new JLabel();
-					templatesLabel.setText("Templates loaded: ");
-					northPanel.add(templatesLabel);
-				}
-				{
-					lblCount = new JLabel();
-					lblCount.setText("0");
-					northPanel.add(lblCount);
-				}
+//				northPanel = new JPanel();
+//				northPanel.setBorder(BorderFactory.createTitledBorder("Templates loading"));
+//				northPanel.setLayout(new FlowLayout(FlowLayout.LEADING));
+//				centerPanel.add(northPanel, BorderLayout.NORTH);
+//				{
+//					btnOpenTemplates = new JButton();
+//					btnOpenTemplates.setText("Load");
+//					btnOpenTemplates.addActionListener(this);
+//					northPanel.add(btnOpenTemplates);
+//				}
+//				{
+//					templatesLabel = new JLabel();
+//					templatesLabel.setText("Templates loaded: ");
+//					northPanel.add(templatesLabel);
+//				}
+//				{
+//					lblCount = new JLabel();
+//					lblCount.setText("0");
+//					northPanel.add(lblCount);
+//				}
 			}
 			{
 				imagePanel = new JPanel();
@@ -393,10 +428,10 @@ public final class IdentifyFinger extends BasePanel implements ActionListener {
 					tableResults = new JTable();
 					tableResults.setModel(new DefaultTableModel(
 							new Object[][] {},
-							new String[] {"ID", "Score"}) {
+							new String[] {"Name", "Surname", "Score"}) {
 
-						private final Class<?>[] types = new Class<?>[] {String.class, Integer.class};
-						private final boolean[] canEdit = new boolean[] {false, false};
+						private final Class<?>[] types = new Class<?>[] {String.class, String.class, Integer.class};
+						private final boolean[] canEdit = new boolean[] {false, false, false};
 
 						@Override
 						public Class<?> getColumnClass(int columnIndex) {
@@ -468,12 +503,12 @@ public final class IdentifyFinger extends BasePanel implements ActionListener {
 		return subjects;
 	}
 
-	void appendIdentifyResult(String name, int score) {
-		((DefaultTableModel) tableResults.getModel()).addRow(new Object[] {name, score});
+	void appendIdentifyResult(String id, String name, String surname, int score) {
+		((DefaultTableModel) tableResults.getModel()).addRow(new Object[] {name, surname, score});
 	}
 
-	void prependIdentifyResult(String name, int score) {
-		((DefaultTableModel) tableResults.getModel()).insertRow(0, new Object[] {name, score});
+	void prependIdentifyResult(String id, String name, String surname, int score) {
+		((DefaultTableModel) tableResults.getModel()).insertRow(0, new Object[] {name, surname, score});
 	}
 
 	// ===========================================================
@@ -483,9 +518,9 @@ public final class IdentifyFinger extends BasePanel implements ActionListener {
 	@Override
 	public void actionPerformed(ActionEvent ev) {
 		try {
-			if (ev.getSource() == btnOpenTemplates) {
-				openTemplates();
-			} else if (ev.getSource() == btnOpenProbe) {
+//			if (ev.getSource() == btnOpenTemplates) {
+//				openTemplates(); }
+			if (ev.getSource() == btnOpenProbe) {
 				openProbe();
 			} else if (ev.getSource() == btnQualityDefault) {
 				spinnerQuality.setValue(FingersTools.getInstance().getDefaultClient().getFingersQualityThreshold());
@@ -588,12 +623,28 @@ public final class IdentifyFinger extends BasePanel implements ActionListener {
 							for (NMatchingResult result : getSubject().getMatchingResults()) {
 								if (s.getId().equals(result.getId())) {
 									match = true;
-									prependIdentifyResult(result.getId(), result.getScore());
+									String id = result.getId();
+									int score = result.getScore();
+									Employee emp = employees.get(Integer.parseInt(id)-1);
+									prependIdentifyResult(
+											id,
+											emp.getFirstName(),
+											emp.getLastName(),
+											score
+									);
 									break;
 								}
 							}
 							if (!match) {
-								appendIdentifyResult(s.getId(), 0);
+								String id = s.getId();
+								Employee emp = employees.get(Integer.parseInt(id)-1);
+
+								appendIdentifyResult(
+										s.getId(),
+										emp.getFirstName(),
+										emp.getLastName(),
+										0
+								);
 							}
 						}
 					} else {

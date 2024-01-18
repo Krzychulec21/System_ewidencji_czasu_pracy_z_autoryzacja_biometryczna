@@ -17,6 +17,9 @@ dependencies {
 	implementation ":jna"
 	implementation project.modules."flatlaf"
 	implementation project(":samples-utils")
+
+	implementation 'mysql:mysql-connector-java:8.0.33'
+	implementation 'org.hibernate:hibernate-core:6.4.1.Final'
 }
 
 apply from: "../../../Common/Java/buildCommon/run.gradle"

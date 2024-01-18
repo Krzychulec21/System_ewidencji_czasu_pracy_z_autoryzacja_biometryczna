@@ -1,3 +1,3 @@
-rootProject.name = 'simple-fingers-sample'
+rootProject.name = 'biometricIdentification'
 include 'samples-utils'
 project(':samples-utils').projectDir = new File("../../../Common/Java/utils")
