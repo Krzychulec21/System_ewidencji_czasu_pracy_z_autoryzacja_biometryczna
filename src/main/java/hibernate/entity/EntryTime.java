@@ -2,27 +2,35 @@ package hibernate.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
-//TODO : pdozielic na dwie tabele osobno entryTime i exitTime / dodawanie uzytkownika: podaje dane pozniej klikasz skanuj przycisk i jak jest zeskanowany to moze ponowic albo zapisac, jak zapisuje to najpiewr zdjcie w templates a pozniej dodawany do bazy jest
 
 @Entity
-@Table(name = "attendance")
-public class Attendance {
+@Table(name = "entry_time")
+public class EntryTime {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
+
     @ManyToOne
     @JoinColumn(name = "employee_id", nullable = false)
     private Employee employee;
-    private LocalDateTime entryTime;
-    private LocalDateTime exitTime;
 
-    public Attendance() {
+    private LocalDateTime entryTime;
+
+    public EntryTime() {
     }
 
-    public Attendance(Employee employee, LocalDateTime entryTime, LocalDateTime exitTime) {
+    public EntryTime(Employee employee, LocalDateTime entryTime) {
         this.employee = employee;
         this.entryTime = entryTime;
-        this.exitTime = exitTime;
+    }
+
+    // Getters and Setters
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public Employee getEmployee() {
@@ -41,21 +49,12 @@ public class Attendance {
         this.entryTime = entryTime;
     }
 
-    public LocalDateTime getExitTime() {
-        return exitTime;
-    }
-
-    public void setExitTime(LocalDateTime exitTime) {
-        this.exitTime = exitTime;
-    }
-
     @Override
     public String toString() {
-        return "Attendance{" +
+        return "EntryTime{" +
                 "id=" + id +
                 ", employee=" + employee +
                 ", entryTime=" + entryTime +
-                ", exitTime=" + exitTime +
                 '}';
     }
 }
