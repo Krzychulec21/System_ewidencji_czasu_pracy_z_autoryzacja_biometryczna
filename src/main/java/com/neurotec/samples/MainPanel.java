@@ -28,7 +28,6 @@ public final class MainPanel extends JPanel implements ChangeListener {
 	private EnrollFromScanner enrollFromScanner;
 	private IdentifyFinger identifyFinger;
 	private VerifyFinger verifyFinger;
-	private SegmentFingers segmentFingers;
 
 	// ===========================================================
 	// Public constructor
@@ -51,9 +50,9 @@ public final class MainPanel extends JPanel implements ChangeListener {
 		enrollFromImage.init();
 		tabbedPane.addTab("Enroll from image", enrollFromImage);
 
-		enrollFromScanner = new EnrollFromScanner();
-		enrollFromScanner.init();
-		tabbedPane.addTab("Enroll from scanner", enrollFromScanner);
+//		enrollFromScanner = new EnrollFromScanner();
+//		enrollFromScanner.init();
+//		tabbedPane.addTab("Enroll from scanner", enrollFromScanner);
 
 		identifyFinger = new IdentifyFinger();
 		identifyFinger.init();
@@ -62,10 +61,6 @@ public final class MainPanel extends JPanel implements ChangeListener {
 		verifyFinger = new VerifyFinger();
 		verifyFinger.init();
 		tabbedPane.addTab("Verify finger", verifyFinger);
-
-		segmentFingers = new SegmentFingers();
-		segmentFingers.init();
-		tabbedPane.addTab("Segment fingers", segmentFingers);
 
 		add(tabbedPane);
 		setPreferredSize(new Dimension(680, 600));
@@ -100,25 +95,20 @@ public final class MainPanel extends JPanel implements ChangeListener {
 					enrollFromImage.updateFingersTools();
 					break;
 				}
+//				case 1: {
+//					obtainLicenses(enrollFromScanner);
+//					enrollFromScanner.updateFingersTools();
+//					enrollFromScanner.updateScannerList();
+//					break;
+//				}
 				case 1: {
-					obtainLicenses(enrollFromScanner);
-					enrollFromScanner.updateFingersTools();
-					enrollFromScanner.updateScannerList();
-					break;
-				}
-				case 2: {
 					obtainLicenses(identifyFinger);
 					identifyFinger.updateFingersTools();
 					break;
 				}
-				case 3: {
+				case 2: {
 					obtainLicenses(verifyFinger);
 					verifyFinger.updateFingersTools();
-					break;
-				}
-				case 4: {
-					obtainLicenses(segmentFingers);
-					segmentFingers.updateFingersTools();
 					break;
 				}
 				default: {
