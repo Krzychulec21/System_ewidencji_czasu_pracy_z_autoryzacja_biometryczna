@@ -34,6 +34,8 @@ import com.neurotec.io.NFile;
 import com.neurotec.samples.util.Utils;
 import com.neurotec.swing.NViewZoomSlider;
 import com.neurotec.util.concurrent.CompletionHandler;
+import hibernate.dao.EmployeeDao;
+import hibernate.entity.Employee;
 
 public final class EnrollFromScanner extends BasePanel implements ActionListener {
 
@@ -77,6 +79,9 @@ public final class EnrollFromScanner extends BasePanel implements ActionListener
 	private JList<NDevice> scannerList;
 	private JScrollPane scrollPane;
 	private JScrollPane scrollPaneList;
+
+	private JTextField txtFirstName;
+	private JTextField txtLastName;
 
 	// ===========================================================
 	// Public constructor
@@ -195,9 +200,9 @@ public final class EnrollFromScanner extends BasePanel implements ActionListener
 			panelAddEmployee.setBorder(BorderFactory.createTitledBorder("Dodawanie pracownika"));
 			panelAddEmployee.setLayout(new BoxLayout(panelAddEmployee, BoxLayout.Y_AXIS));
 
-			JLabel lblAddEmployee = new JLabel("Dodawanie pracownika", SwingConstants.CENTER);
-			lblAddEmployee.setAlignmentX(Component.CENTER_ALIGNMENT);
-			panelAddEmployee.add(lblAddEmployee);
+//			//JLabel lblAddEmployee = new JLabel("Dodawanie pracownika", SwingConstants.CENTER);
+//			lblAddEmployee.setAlignmentX(Component.CENTER_ALIGNMENT);
+//			panelAddEmployee.add(lblAddEmployee);
 
 			panelAddEmployee.add(Box.createVerticalStrut(10));
 
@@ -207,17 +212,30 @@ public final class EnrollFromScanner extends BasePanel implements ActionListener
 				panelInputs.setMaximumSize(new Dimension(400, 60));
 				{
 					panelInputs.add(new JLabel("Imię:"));
-					JTextField txtFirstName = new JTextField();
+					txtFirstName = new JTextField();
 					panelInputs.add(txtFirstName);
 
 					panelInputs.add(new JLabel("Nazwisko:"));
-					JTextField txtLastName = new JTextField();
+					txtLastName = new JTextField();
 					panelInputs.add(txtLastName);
 				}
 				panelInputsAndButton.add(panelInputs, BorderLayout.CENTER);
 
 				JButton btnAddEmployee = new JButton("Dodaj pracownika");
 				btnAddEmployee.setAlignmentX(Component.CENTER_ALIGNMENT);
+				btnAddEmployee.addActionListener(e -> {
+					String firstName = txtFirstName.getText();
+					String lastName = txtLastName.getText();
+
+					if (!firstName.isEmpty() && !lastName.isEmpty()) {
+						saveEmployeeTemplate(firstName, lastName);
+					} else {
+						JOptionPane.showMessageDialog(EnrollFromScanner.this,
+								"Imię i nazwisko nie mogą być puste.",
+								"Błąd",
+								JOptionPane.ERROR_MESSAGE);
+					}
+				});
 				panelInputsAndButton.add(btnAddEmployee, BorderLayout.EAST);
 			}
 
@@ -477,6 +495,36 @@ public final class EnrollFromScanner extends BasePanel implements ActionListener
 			});
 		}
 
+	}
+	private void saveEmployeeTemplate(String firstName, String lastName) {
+		if (subject != null && subject.getStatus() == NBiometricStatus.OK) {
+			//sceizka do zapisu templata
+			String templateName = String.format("%s_%s", firstName, lastName);
+			String templatePath = "./src/main/resources/templates/" + templateName;
+
+			//zapisywanie
+			try {
+				NFile.writeAllBytes(templatePath, subject.getTemplateBuffer());
+				Employee employee = new Employee(firstName, lastName, templatePath);
+				EmployeeDao dao = new EmployeeDao();
+				dao.addEmployee(employee);
+				JOptionPane.showMessageDialog(EnrollFromScanner.this,
+						"Pracownik został dodany pomyślnie.",
+						"Sukces",
+						JOptionPane.INFORMATION_MESSAGE);
+			} catch (IOException ex) {
+				ex.printStackTrace();
+				JOptionPane.showMessageDialog(EnrollFromScanner.this,
+						"Nie udało się zapisać szablonu odcisku palca.",
+						"Błąd",
+						JOptionPane.ERROR_MESSAGE);
+			}
+		} else {
+			JOptionPane.showMessageDialog(EnrollFromScanner.this,
+					"Odcisk palca nie jest gotowy do zapisu.",
+					"Błąd",
+					JOptionPane.ERROR_MESSAGE);
+		}
 	}
 
 	private class ScannerSelectionListener implements ListSelectionListener {
