@@ -172,44 +172,7 @@ public final class EnrollFromImage extends BasePanel implements ActionListener {
 				panelLicensing = new LicensingPanel(requiredLicenses, optionalLicenses);
 				northPanel.add(panelLicensing, java.awt.BorderLayout.NORTH);
 			}
-			{
-				JPanel namePanel = new JPanel(new GridBagLayout());
-				GridBagConstraints gbc = new GridBagConstraints();
 
-				JLabel lblFirstName = new JLabel("Imię:");
-				gbc.gridx = 0;
-				gbc.gridy = 0;
-				gbc.anchor = GridBagConstraints.LINE_END;
-				namePanel.add(lblFirstName, gbc);
-
-				textFieldFirstName = new JTextField(10);
-				gbc.gridx = 1;
-				gbc.gridy = 0;
-				gbc.fill = GridBagConstraints.HORIZONTAL;
-				namePanel.add(textFieldFirstName, gbc);
-
-				JLabel lblLastName = new JLabel("Nazwisko:");
-				gbc.gridx = 0;
-				gbc.gridy = 1;
-				namePanel.add(lblLastName, gbc);
-
-				textFieldLastName = new JTextField(10);
-				gbc.gridx = 1;
-				gbc.gridy = 1;
-				gbc.fill = GridBagConstraints.HORIZONTAL;
-				namePanel.add(textFieldLastName, gbc);
-
-				JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-				btnScanFinger = new JButton("Przejdź do skanowania");
-				buttonPanel.add(btnScanFinger);
-
-				btnRescanFinger = new JButton("Zeskanuj ponownie");
-				btnRescanFinger.setVisible(false);
-				buttonPanel.add(btnRescanFinger);
-
-				northPanel.add(namePanel, BorderLayout.CENTER);
-				northPanel.add(buttonPanel, BorderLayout.SOUTH);
-			}
 			{
 				{
 					openImagePanel = new JPanel();
