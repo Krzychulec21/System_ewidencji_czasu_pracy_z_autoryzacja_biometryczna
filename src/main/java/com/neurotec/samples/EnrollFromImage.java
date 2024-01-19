@@ -1,10 +1,6 @@
 package com.neurotec.samples;
 
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
@@ -13,17 +9,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JFileChooser;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JSpinner;
-import javax.swing.JSplitPane;
-import javax.swing.SpinnerNumberModel;
-import javax.swing.SwingUtilities;
+import javax.swing.*;
 
 import com.neurotec.biometrics.NBiometricStatus;
 import com.neurotec.biometrics.NFinger;
@@ -82,6 +68,12 @@ public final class EnrollFromImage extends BasePanel implements ActionListener {
 	private JSpinner spinnerThreshold;
 	private JSplitPane splitPane;
 	private JLabel tresholdLabel;
+
+	//rzeczy do wypelniania:
+	private JTextField textFieldFirstName;
+	private JTextField textFieldLastName;
+	private JButton btnScanFinger;
+	private JButton btnRescanFinger;
 
 	// ===========================================================
 	// Public constructor
@@ -181,13 +173,51 @@ public final class EnrollFromImage extends BasePanel implements ActionListener {
 				northPanel.add(panelLicensing, java.awt.BorderLayout.NORTH);
 			}
 			{
+				JPanel namePanel = new JPanel(new GridBagLayout());
+				GridBagConstraints gbc = new GridBagConstraints();
+
+				JLabel lblFirstName = new JLabel("Imię:");
+				gbc.gridx = 0;
+				gbc.gridy = 0;
+				gbc.anchor = GridBagConstraints.LINE_END;
+				namePanel.add(lblFirstName, gbc);
+
+				textFieldFirstName = new JTextField(10);
+				gbc.gridx = 1;
+				gbc.gridy = 0;
+				gbc.fill = GridBagConstraints.HORIZONTAL;
+				namePanel.add(textFieldFirstName, gbc);
+
+				JLabel lblLastName = new JLabel("Nazwisko:");
+				gbc.gridx = 0;
+				gbc.gridy = 1;
+				namePanel.add(lblLastName, gbc);
+
+				textFieldLastName = new JTextField(10);
+				gbc.gridx = 1;
+				gbc.gridy = 1;
+				gbc.fill = GridBagConstraints.HORIZONTAL;
+				namePanel.add(textFieldLastName, gbc);
+
+				JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+				btnScanFinger = new JButton("Przejdź do skanowania");
+				buttonPanel.add(btnScanFinger);
+
+				btnRescanFinger = new JButton("Zeskanuj ponownie");
+				btnRescanFinger.setVisible(false);
+				buttonPanel.add(btnRescanFinger);
+
+				northPanel.add(namePanel, BorderLayout.CENTER);
+				northPanel.add(buttonPanel, BorderLayout.SOUTH);
+			}
+			{
 				{
 					openImagePanel = new JPanel();
 					openImagePanel.setLayout(new GridBagLayout());
 					northPanel.add(openImagePanel, java.awt.BorderLayout.WEST);
 					{
 						btnOpenImage = new JButton();
-						btnOpenImage.setText("Open image");
+						btnOpenImage.setText("Open obrazek");
 						btnOpenImage.addActionListener(this);
 						gridBagConstraints = new GridBagConstraints();
 						gridBagConstraints.gridx = 0;
@@ -198,6 +228,7 @@ public final class EnrollFromImage extends BasePanel implements ActionListener {
 					}
 				}
 			}
+
 			{
 				optionsPanel = new JPanel();
 				optionsPanel.setLayout(new GridBagLayout());

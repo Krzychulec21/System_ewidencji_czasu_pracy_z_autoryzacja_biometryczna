@@ -1,9 +1,6 @@
 package com.neurotec.samples;
 
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.GridLayout;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
@@ -13,18 +10,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.EnumSet;
 
-import javax.swing.BorderFactory;
-import javax.swing.DefaultListModel;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JFileChooser;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.ListSelectionModel;
-import javax.swing.SwingUtilities;
+import javax.swing.*;
 import javax.swing.border.BevelBorder;
 import javax.swing.border.LineBorder;
 import javax.swing.border.SoftBevelBorder;
@@ -204,6 +190,44 @@ public final class EnrollFromScanner extends BasePanel implements ActionListener
 
 		panelLicensing = new LicensingPanel(requiredLicenses, optionalLicenses);
 		add(panelLicensing, java.awt.BorderLayout.NORTH);
+		{
+			JPanel panelAddEmployee = new JPanel();
+			panelAddEmployee.setBorder(BorderFactory.createTitledBorder("Dodawanie pracownika"));
+			panelAddEmployee.setLayout(new BoxLayout(panelAddEmployee, BoxLayout.Y_AXIS));
+
+			JLabel lblAddEmployee = new JLabel("Dodawanie pracownika", SwingConstants.CENTER);
+			lblAddEmployee.setAlignmentX(Component.CENTER_ALIGNMENT);
+			panelAddEmployee.add(lblAddEmployee);
+
+			panelAddEmployee.add(Box.createVerticalStrut(10));
+
+			JPanel panelInputsAndButton = new JPanel(new BorderLayout(10, 10));
+			{
+				JPanel panelInputs = new JPanel(new GridLayout(2, 2, 5, 5));
+				panelInputs.setMaximumSize(new Dimension(400, 60));
+				{
+					panelInputs.add(new JLabel("Imię:"));
+					JTextField txtFirstName = new JTextField();
+					panelInputs.add(txtFirstName);
+
+					panelInputs.add(new JLabel("Nazwisko:"));
+					JTextField txtLastName = new JTextField();
+					panelInputs.add(txtLastName);
+				}
+				panelInputsAndButton.add(panelInputs, BorderLayout.CENTER);
+
+				JButton btnAddEmployee = new JButton("Dodaj pracownika");
+				btnAddEmployee.setAlignmentX(Component.CENTER_ALIGNMENT);
+				panelInputsAndButton.add(btnAddEmployee, BorderLayout.EAST);
+			}
+
+			panelAddEmployee.add(panelInputsAndButton);
+
+			panelAddEmployee.add(Box.createVerticalGlue());
+
+			add(panelAddEmployee, BorderLayout.NORTH);
+		}
+
 
 		panelMain = new JPanel();
 		panelMain.setLayout(new BorderLayout());
