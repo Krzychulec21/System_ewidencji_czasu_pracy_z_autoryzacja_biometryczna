@@ -50,9 +50,9 @@ public final class MainPanel extends JPanel implements ChangeListener {
 		enrollFromImage.init();
 		tabbedPane.addTab("Enroll from image", enrollFromImage);
 
-//		enrollFromScanner = new EnrollFromScanner();
-//		enrollFromScanner.init();
-//		tabbedPane.addTab("Enroll from scanner", enrollFromScanner);
+		enrollFromScanner = new EnrollFromScanner();
+		enrollFromScanner.init();
+		tabbedPane.addTab("Enroll from scanner", enrollFromScanner);
 
 		identifyFinger = new IdentifyFinger();
 		identifyFinger.init();
@@ -95,18 +95,18 @@ public final class MainPanel extends JPanel implements ChangeListener {
 					enrollFromImage.updateFingersTools();
 					break;
 				}
-//				case 1: {
-//					obtainLicenses(enrollFromScanner);
-//					enrollFromScanner.updateFingersTools();
-//					enrollFromScanner.updateScannerList();
-//					break;
-//				}
 				case 1: {
+					obtainLicenses(enrollFromScanner);
+					enrollFromScanner.updateFingersTools();
+					enrollFromScanner.updateScannerList();
+					break;
+				}
+				case 2: {
 					obtainLicenses(identifyFinger);
 					identifyFinger.updateFingersTools();
 					break;
 				}
-				case 2: {
+				case 3: {
 					obtainLicenses(verifyFinger);
 					verifyFinger.updateFingersTools();
 					break;

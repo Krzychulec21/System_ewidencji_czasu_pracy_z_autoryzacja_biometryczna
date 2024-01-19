@@ -23,7 +23,8 @@ public class HibernateUtil {
                 settings.put(Environment.URL, "jdbc:mysql://localhost:3306/fingerprints");
                 settings.put(Environment.USER, "root");
                 settings.put(Environment.PASS, "");
-                settings.put(Environment.SHOW_SQL, "true");
+                settings.put(Environment.SHOW_SQL, "false");
+
 
                 settings.put(Environment.CURRENT_SESSION_CONTEXT_CLASS, "thread");
 
