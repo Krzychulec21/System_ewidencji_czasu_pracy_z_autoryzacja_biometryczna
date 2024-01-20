@@ -4,6 +4,8 @@ import java.util.Properties;
 
 import hibernate.entity.Attendance;
 import hibernate.entity.Employee;
+import hibernate.entity.EntryTime;
+import hibernate.entity.ExitTime;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
@@ -28,12 +30,14 @@ public class HibernateUtil {
 
                 settings.put(Environment.CURRENT_SESSION_CONTEXT_CLASS, "thread");
 
-                settings.put(Environment.HBM2DDL_AUTO, "create");
+                settings.put(Environment.HBM2DDL_AUTO, "create-drop");
 
                 configuration.setProperties(settings);
 
                 configuration.addAnnotatedClass(Employee.class);
                 configuration.addAnnotatedClass(Attendance.class);
+                configuration.addAnnotatedClass(EntryTime.class);
+                configuration.addAnnotatedClass(ExitTime.class);
 
                 ServiceRegistry serviceRegistry = new StandardServiceRegistryBuilder()
                         .applySettings(configuration.getProperties()).build();
