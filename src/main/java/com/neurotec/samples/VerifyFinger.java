@@ -15,21 +15,13 @@ import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.List;
 
-import javax.swing.BorderFactory;
+import javax.swing.*;
 import javax.swing.Box.Filler;
-import javax.swing.BoxLayout;
-import javax.swing.DefaultComboBoxModel;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JFileChooser;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.SwingUtilities;
 import javax.swing.border.TitledBorder;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 
 import com.neurotec.biometrics.NBiometricStatus;
 import com.neurotec.biometrics.NFinger;
@@ -42,6 +34,8 @@ import com.neurotec.samples.util.Utils;
 import com.neurotec.swing.NViewZoomSlider;
 import com.neurotec.util.NIndexPair;
 import com.neurotec.util.concurrent.CompletionHandler;
+import hibernate.dao.EmployeeDao;
+import hibernate.entity.Employee;
 
 public final class VerifyFinger extends BasePanel implements ActionListener {
 
@@ -56,6 +50,13 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 
 	private static final String LEFT_LABEL_TEXT = "Image or template left: ";
 	private static final String RIGHT_LABEL_TEXT = "Image or template right: ";
+
+	// WLASNE //
+	private static final String[] employeesTableColumns = {
+			"ID",
+			"Imie",
+			"Nazwisko",
+	};
 
 	// ===========================================================
 	// Private fields
@@ -99,6 +100,9 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 	private JPanel verifyPanel;
 	private JPanel leftBinarizedPanel;
 	private JPanel rightBinarizedPanel;
+
+	// WLASNE //
+	private JTable employeesTable;
 
 	// ===========================================================
 	// Public constructor
@@ -182,9 +186,9 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 
 	private void resetMatedMinutiaeOnViews() {
 		viewLeft.setMatedMinutiae(new NIndexPair[0]);
-		viewRight.setMatedMinutiae(new NIndexPair[0]);
+//		viewRight.setMatedMinutiae(new NIndexPair[0]);
 		viewLeft.setTree(new NIndexPair[0]);
-		viewRight.setTree(new NIndexPair[0]);
+//		viewRight.setTree(new NIndexPair[0]);
 	}
 
 	// ===========================================================
@@ -248,12 +252,12 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 					farPanel.add(defaultButton, gridBagConstraints);
 				}
 			}
-			{
-				rightOpenButton = new JButton();
-				rightOpenButton.setText("Open");
-				rightOpenButton.addActionListener(this);
-				northPanel.add(rightOpenButton);
-			}
+//			{
+//				rightOpenButton = new JButton();
+//				rightOpenButton.setText("Open");
+//				rightOpenButton.addActionListener(this);
+//				northPanel.add(rightOpenButton);
+//			}
 		}
 		{
 			centerPanel = new JPanel();
@@ -281,20 +285,54 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 			{
 				rightScrollPane = new JScrollPane();
 				rightScrollPane.setPreferredSize(new Dimension(200, 200));
+				rightScrollPane.setBorder(BorderFactory.createTitledBorder("Pracownicy"));
 				centerPanel.add(rightScrollPane);
 				{
-					viewRight = new NFingerView();
-					viewRight.setAutofit(true);
-					viewRight.addMouseListener(new MouseAdapter() {
+					EmployeeDao dao = new EmployeeDao();
+
+					List<Employee> employeeList = dao.getEmployees();
+					Object[][] employees = new Object[employeeList.size()][3];
+
+					for (int i = 0; i < employeeList.size(); i++) {
+						employees[i][0] = employeeList.get(i).getId();
+						employees[i][1] = employeeList.get(i).getFirstName();
+						employees[i][2] = employeeList.get(i).getLastName();
+					}
+
+					employeesTable = new JTable(employees, employeesTableColumns);
+					employeesTable.setDefaultEditor(Object.class, null);
+					employeesTable.setFillsViewportHeight(true);
+					employeesTable.setVisible(true);
+					rightScrollPane.setViewportView(employeesTable);
+
+					employeesTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
 						@Override
-						public void mouseClicked(MouseEvent ev) {
-							super.mouseClicked(ev);
-							if (ev.getButton() == MouseEvent.BUTTON3) {
-								cbLeftShowBinarized.doClick();
+						public void valueChanged(ListSelectionEvent event) {
+							if (employeesTable.getSelectedRow() > -1) {
+								// print first column value from selected row
+                                try {
+									String pathToFingerprint = employeeList.get(employeesTable.getSelectedRow()).getFingerprint();
+                                    subjectRight = NSubject.fromFile(pathToFingerprint);
+									rightLabel.setText(pathToFingerprint);
+                                } catch (IOException e) {
+                                    throw new RuntimeException(e);
+                                }
+//								System.out.println(employeesTable.getValueAt(employeesTable.getSelectedRow(), 0).toString());
 							}
 						}
 					});
-					rightScrollPane.setViewportView(viewRight);
+//					viewRight = new NFingerView();
+//					viewRight.setAutofit(true);
+//					viewRight.addMouseListener(new MouseAdapter() {
+//						@Override
+//						public void mouseClicked(MouseEvent ev) {
+//							super.mouseClicked(ev);
+//							if (ev.getButton() == MouseEvent.BUTTON3) {
+//								cbLeftShowBinarized.doClick();
+//							}
+//						}
+//					});
+//					rightScrollPane.setViewportView(viewRight);
 				}
 			}
 		}
@@ -326,22 +364,22 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 							leftBinarizedPanel.add(cbLeftShowBinarized, BorderLayout.CENTER);
 						}
 					}
-					{
-						rightBinarizedPanel = new JPanel();
-						rightBinarizedPanel.setLayout(new BorderLayout());
-						showBinarizedPanel.add(rightBinarizedPanel, BorderLayout.EAST);
-						{
-							viewRightZoomSlider = new NViewZoomSlider();
-							viewRightZoomSlider.setView(viewRight);
-							rightBinarizedPanel.add(viewRightZoomSlider, BorderLayout.EAST);
-						}
-						{
-							cbRightShowBinarized = new JCheckBox();
-							cbRightShowBinarized.setText("Show binarized image");
-							cbRightShowBinarized.addActionListener(this);
-							rightBinarizedPanel.add(cbRightShowBinarized, BorderLayout.CENTER);
-						}
-					}
+//					{
+//						rightBinarizedPanel = new JPanel();
+//						rightBinarizedPanel.setLayout(new BorderLayout());
+//						showBinarizedPanel.add(rightBinarizedPanel, BorderLayout.EAST);
+//						{
+//							viewRightZoomSlider = new NViewZoomSlider();
+//							viewRightZoomSlider.setView(viewRight);
+//							rightBinarizedPanel.add(viewRightZoomSlider, BorderLayout.EAST);
+//						}
+//						{
+//							cbRightShowBinarized = new JCheckBox();
+//							cbRightShowBinarized.setText("Show binarized image");
+//							cbRightShowBinarized.addActionListener(this);
+//							rightBinarizedPanel.add(cbRightShowBinarized, BorderLayout.CENTER);
+//						}
+//					}
 				}
 				{
 					clearButtonPanel = new JPanel();
@@ -395,7 +433,7 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 			}
 		}
 		cbLeftShowBinarized.doClick();
-		cbRightShowBinarized.doClick();
+//		cbRightShowBinarized.doClick();
 	}
 
 	@Override
@@ -460,7 +498,7 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 			} else if (ev.getSource() == leftOpenButton) {
 				loadItem(SUBJECT_LEFT);
 			} else if (ev.getSource() == rightOpenButton) {
-				loadItem(SUBJECT_RIGHT);
+//				loadItem(SUBJECT_RIGHT);
 			} else if (ev.getSource() == clearButton) {
 				clear();
 			} else if (ev.getSource() == cbLeftShowBinarized) {
@@ -527,22 +565,22 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 				public void run() {
 					if (status == NBiometricStatus.OK) {
 						int score = getLeft().getMatchingResults().get(0).getScore();
-						String msg = "Score of matched templates: " + score;
+						String msg = "Wynik porównania odcisków: " + score;
 						updateLabel(msg);
-						SwingUtilities.invokeLater(() -> { JOptionPane.showMessageDialog(VerifyFinger.this, msg, "Match", JOptionPane.PLAIN_MESSAGE); });
+						SwingUtilities.invokeLater(() -> { JOptionPane.showMessageDialog(VerifyFinger.this, msg, "Wynik", JOptionPane.PLAIN_MESSAGE); });
 
 						NIndexPair[] matedMinutiae = getLeft().getMatchingResults().get(0).getMatchingDetails().getFingers().get(0).getMatedMinutiae();
 
 						viewLeft.setMatedMinutiaIndex(0);
 						viewLeft.setMatedMinutiae(matedMinutiae);
 
-						viewRight.setMatedMinutiaIndex(1);
-						viewRight.setMatedMinutiae(matedMinutiae);
+//						viewRight.setMatedMinutiaIndex(1);
+//						viewRight.setMatedMinutiae(matedMinutiae);
 
 						viewLeft.prepareTree();
-						viewRight.setTree(viewLeft.getTree());
+//						viewRight.setTree(viewLeft.getTree());
 					} else {
-						SwingUtilities.invokeLater(() -> { JOptionPane.showMessageDialog(VerifyFinger.this, "Templates didn't match.", "No match", JOptionPane.WARNING_MESSAGE); });
+						SwingUtilities.invokeLater(() -> { JOptionPane.showMessageDialog(VerifyFinger.this, "Odcisk palca nie pasuje do wybranego pracownika.", "Brak powiązania", JOptionPane.WARNING_MESSAGE); });
 					}
 				}
 
