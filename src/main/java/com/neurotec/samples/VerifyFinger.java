@@ -1,11 +1,6 @@
 package com.neurotec.samples;
 
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.GridLayout;
-import java.awt.Insets;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
@@ -15,20 +10,25 @@ import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 
 import javax.swing.*;
 import javax.swing.Box.Filler;
+import javax.swing.border.BevelBorder;
+import javax.swing.border.LineBorder;
+import javax.swing.border.SoftBevelBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
-import com.neurotec.biometrics.NBiometricStatus;
-import com.neurotec.biometrics.NFinger;
-import com.neurotec.biometrics.NSubject;
-import com.neurotec.biometrics.NSubject.FingerCollection;
+import com.neurotec.biometrics.*;
 import com.neurotec.biometrics.swing.NFingerView;
 import com.neurotec.biometrics.swing.NFingerViewBase.ShownImage;
+import com.neurotec.devices.NDevice;
+import com.neurotec.devices.NDeviceManager;
+import com.neurotec.devices.NDeviceType;
+import com.neurotec.devices.NFingerScanner;
 import com.neurotec.samples.swing.ImageThumbnailFileChooser;
 import com.neurotec.samples.util.Utils;
 import com.neurotec.swing.NViewZoomSlider;
@@ -88,7 +88,7 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 	private JLabel leftLabel;
 	private JButton leftOpenButton;
 	private JScrollPane leftScrollPane;
-	private JPanel mainPanel;
+	private JPanel panelMain;
 	private JPanel northPanel;
 	private JLabel rightLabel;
 	private JButton rightOpenButton;
@@ -104,6 +104,24 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 	// WLASNE //
 	private JTable employeesTable;
 
+	//krzycha
+	private NSubject subject;
+	private final NDeviceManager deviceManager;
+	private boolean scanning;
+	private final CaptureCompletionHandler captureCompletionHandler = new CaptureCompletionHandler();
+	private NFingerView view; // Może wymagać dostosowania do Twojego GUI
+	private JButton btnCancel;
+	private JButton btnForce;
+	private JButton btnRefresh;
+	private JButton btnScan;
+	private JCheckBox cbAutomatic;
+	private JLabel lblInfo;
+	private JPanel panelButtons;
+	private JPanel panelScanners;
+	private JList<NDevice> scannerList;
+	private JScrollPane scrollPaneList;
+	private JPanel panelInfo;
+
 	// ===========================================================
 	// Public constructor
 	// ===========================================================
@@ -118,59 +136,126 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 
 		subjectLeft = new NSubject();
 		subjectRight = new NSubject();
+
+		FingersTools.getInstance().getClient().setUseDeviceManager(true);
+		deviceManager = FingersTools.getInstance().getClient().getDeviceManager();
+		deviceManager.setDeviceTypes(EnumSet.of(NDeviceType.FINGER_SCANNER));
+		deviceManager.initialize();
+	}
+
+	// ===========================================================
+	// Package private methods
+	// ===========================================================
+
+	void updateStatus(String status) {
+		lblInfo.setText(status);
+	}
+
+	NSubject getSubject() {
+		return subject;
+	}
+
+	NFingerScanner getSelectedScanner() {
+		return (NFingerScanner) scannerList.getSelectedValue();
 	}
 
 	// ===========================================================
 	// Private methods
 	// ===========================================================
 
-	private void loadItem(String position) throws IOException {
-		fileChooser.setMultiSelectionEnabled(false);
-		if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-			resetMatedMinutiaeOnViews();
-			verifyLabel.setText("");
-			NSubject subjectTmp = null;
-			NFinger finger = null;
-			try {
-				subjectTmp = NSubject.fromFile(fileChooser.getSelectedFile().getAbsolutePath());
-				FingerCollection fingers = subjectTmp.getFingers();
-				if (fingers.isEmpty()) {
-					subjectTmp = null;
-					throw new IllegalArgumentException("Template contains no finger records.");
-				}
-				finger = fingers.get(0);
-				templateCreationHandler.completed(NBiometricStatus.OK, position);
-			} catch (UnsupportedOperationException e) {
-				// Ignore. UnsupportedOperationException means file is not a valid template.
-			}
-
-			// If file is not a template, try to load it as an image.
-			if (subjectTmp == null) {
-				finger = new NFinger();
-				finger.setFileName(fileChooser.getSelectedFile().getAbsolutePath());
-				subjectTmp = new NSubject();
-				subjectTmp.getFingers().add(finger);
-				updateFingersTools();
-				FingersTools.getInstance().getClient().createTemplate(subjectTmp, position, templateCreationHandler);
-			}
-
-			if (SUBJECT_LEFT.equals(position)) {
-				subjectLeft = subjectTmp;
-				leftLabel.setText(fileChooser.getSelectedFile().getAbsolutePath());
-				viewLeft.setFinger(finger);
-			} else if (SUBJECT_RIGHT.equals(position)) {
-				subjectRight = subjectTmp;
-				rightLabel.setText(fileChooser.getSelectedFile().getAbsolutePath());
-				viewRight.setFinger(finger);
-			} else {
-				throw new AssertionError("Unknown subject position: " + position);
-			}
+	public void updateScannerList() {
+		DefaultListModel<NDevice> model = (DefaultListModel<NDevice>) scannerList.getModel();
+		model.clear();
+		for (NDevice device : deviceManager.getDevices()) {
+			model.addElement(device);
+		}
+		NFingerScanner scanner = (NFingerScanner) FingersTools.getInstance().getClient().getFingerScanner();
+		if ((scanner == null) && (model.getSize() > 0)) {
+			scannerList.setSelectedIndex(0);
+		} else if (scanner != null) {
+			scannerList.setSelectedValue(scanner, true);
 		}
 	}
 
+	public void cancelCapturing() {
+		FingersTools.getInstance().getClient().cancel();
+	}
+
+	private void startCapturing() {
+		lblInfo.setText("");
+		if (FingersTools.getInstance().getClient().getFingerScanner() == null) {
+			SwingUtilities.invokeLater(() -> { JOptionPane.showMessageDialog(this, "Please select scanner from the list.", "No scanner selected", JOptionPane.PLAIN_MESSAGE); });
+			return;
+		}
+
+		// Create a finger.
+		NFinger finger = new NFinger();
+
+		// Set Manual capturing mode if automatic isn't selected.
+		if (!cbAutomatic.isSelected()) {
+			finger.setCaptureOptions(EnumSet.of(NBiometricCaptureOption.MANUAL));
+		}
+
+		// Add finger to subject and finger view.
+		subject = new NSubject();
+		subject.getFingers().add(finger);
+		view.setFinger(finger);
+		view.setShownImage(ShownImage.ORIGINAL);
+
+		// Begin capturing.
+		NBiometricTask task = FingersTools.getInstance().getClient().createTask(EnumSet.of(NBiometricOperation.CAPTURE, NBiometricOperation.CREATE_TEMPLATE), subject);
+		FingersTools.getInstance().getClient().performTask(task, null, captureCompletionHandler);
+		scanning = true;
+		updateControls();
+	}
+
+//	private void loadItem(String position) throws IOException {
+//		fileChooser.setMultiSelectionEnabled(false);
+//		if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+//			resetMatedMinutiaeOnViews();
+//			verifyLabel.setText("");
+//			NSubject subjectTmp = null;
+//			NFinger finger = null;
+//			try {
+//				subjectTmp = NSubject.fromFile(fileChooser.getSelectedFile().getAbsolutePath());
+//				FingerCollection fingers = subjectTmp.getFingers();
+//				if (fingers.isEmpty()) {
+//					subjectTmp = null;
+//					throw new IllegalArgumentException("Template contains no finger records.");
+//				}
+//				finger = fingers.get(0);
+//				templateCreationHandler.completed(NBiometricStatus.OK, position);
+//			} catch (UnsupportedOperationException e) {
+//				// Ignore. UnsupportedOperationException means file is not a valid template.
+//			}
+//
+//			// If file is not a template, try to load it as an image.
+//			if (subjectTmp == null) {
+//				finger = new NFinger();
+//				finger.setFileName(fileChooser.getSelectedFile().getAbsolutePath());
+//				subjectTmp = new NSubject();
+//				subjectTmp.getFingers().add(finger);
+//				updateFingersTools();
+//				FingersTools.getInstance().getClient().createTemplate(subjectTmp, position, templateCreationHandler);
+//			}
+//
+//			if (SUBJECT_LEFT.equals(position)) {
+//				subjectLeft = subjectTmp;
+//				leftLabel.setText(fileChooser.getSelectedFile().getAbsolutePath());
+//				viewLeft.setFinger(finger);
+//			} else if (SUBJECT_RIGHT.equals(position)) {
+//				subjectRight = subjectTmp;
+//				rightLabel.setText(fileChooser.getSelectedFile().getAbsolutePath());
+//				viewRight.setFinger(finger);
+//			} else {
+//				throw new AssertionError("Unknown subject position: " + position);
+//			}
+//		}
+//	}
+
 	private void verify() {
 		updateFingersTools();
-		FingersTools.getInstance().getClient().verify(subjectLeft, subjectRight, null, verificationHandler);
+		FingersTools.getInstance().getClient().verify(subject, subjectRight, null, verificationHandler);
 	}
 
 	private void clear() {
@@ -183,6 +268,8 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 		leftLabel.setText(LEFT_LABEL_TEXT);
 		rightLabel.setText(RIGHT_LABEL_TEXT);
 	}
+
+
 
 	private void resetMatedMinutiaeOnViews() {
 		viewLeft.setMatedMinutiae(new NIndexPair[0]);
@@ -201,23 +288,77 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 		setLayout(new BorderLayout());
 
 		farComboBox = new JComboBox<>();
-		fileChooser = new ImageThumbnailFileChooser();
-		fileChooser.setIcon(Utils.createIconImage("images/Logo16x16.png"));
+//		fileChooser = new ImageThumbnailFileChooser();
+//		fileChooser.setIcon(Utils.createIconImage("images/Logo16x16.png"));
 
 		panelLicensing = new LicensingPanel(requiredLicenses, optionalLicenses);
 		add(panelLicensing, java.awt.BorderLayout.NORTH);
 
-		mainPanel = new JPanel();
-		mainPanel.setLayout(new BorderLayout());
-		add(mainPanel, BorderLayout.CENTER);
+		panelMain = new JPanel();
+		panelMain.setLayout(new BorderLayout());
+		add(panelMain, BorderLayout.CENTER);
 		{
 			northPanel = new JPanel();
-			mainPanel.add(northPanel, BorderLayout.NORTH);
+			panelMain.add(northPanel, BorderLayout.NORTH);
+//			{
+//				leftOpenButton = new JButton();
+//				leftOpenButton.setText("Open");
+//				leftOpenButton.addActionListener(this);
+//				northPanel.add(leftOpenButton);
+//			}
+			panelScanners = new JPanel();
+			panelScanners.setBorder(BorderFactory.createTitledBorder("Scanners list"));
+			panelScanners.setLayout(new BorderLayout());
+			panelMain.add(panelScanners, BorderLayout.NORTH);
 			{
-				leftOpenButton = new JButton();
-				leftOpenButton.setText("Open");
-				leftOpenButton.addActionListener(this);
-				northPanel.add(leftOpenButton);
+				scrollPaneList = new JScrollPane();
+				scrollPaneList.setPreferredSize(new Dimension(0, 90));
+				panelScanners.add(scrollPaneList, BorderLayout.CENTER);
+				{
+					scannerList = new JList<>();
+					scannerList.setModel(new DefaultListModel<>());
+					scannerList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+					scannerList.setBorder(LineBorder.createBlackLineBorder());
+					scannerList.addListSelectionListener(new ScannerSelectionListener());
+					scrollPaneList.setViewportView(scannerList);
+
+				}
+			}
+			{
+				panelButtons = new JPanel();
+				panelButtons.setLayout(new FlowLayout(FlowLayout.LEADING));
+				panelScanners.add(panelButtons, BorderLayout.SOUTH);
+				{
+					btnRefresh = new JButton();
+					btnRefresh.setText("Refresh list");
+					btnRefresh.addActionListener(this);
+					panelButtons.add(btnRefresh);
+				}
+				{
+					btnScan = new JButton();
+					btnScan.setText("Scan");
+					btnScan.addActionListener(this);
+					panelButtons.add(btnScan);
+				}
+				{
+					btnCancel = new JButton();
+					btnCancel.setText("Cancel");
+					btnCancel.setEnabled(false);
+					btnCancel.addActionListener(this);
+					panelButtons.add(btnCancel);
+				}
+				{
+					btnForce = new JButton();
+					btnForce.setText("Force");
+					btnForce.addActionListener(this);
+					panelButtons.add(btnForce);
+				}
+				{
+					cbAutomatic = new JCheckBox();
+					cbAutomatic.setSelected(true);
+					cbAutomatic.setText("Scan automatically");
+					panelButtons.add(cbAutomatic);
+				}
 			}
 			{
 				farPanel = new JPanel();
@@ -262,23 +403,15 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 		{
 			centerPanel = new JPanel();
 			centerPanel.setLayout(new GridLayout(1, 2, 5, 0));
-			mainPanel.add(centerPanel, BorderLayout.CENTER);
+			panelMain.add(centerPanel, BorderLayout.CENTER);
 			{
 				leftScrollPane = new JScrollPane();
 				leftScrollPane.setPreferredSize(new Dimension(200, 200));
 				centerPanel.add(leftScrollPane);
 				{
 					viewLeft = new NFingerView();
+					viewLeft.setShownImage(ShownImage.RESULT);
 					viewLeft.setAutofit(true);
-					viewLeft.addMouseListener(new MouseAdapter() {
-						@Override
-						public void mouseClicked(MouseEvent ev) {
-							super.mouseClicked(ev);
-							if (ev.getButton() == MouseEvent.BUTTON3) {
-								cbLeftShowBinarized.doClick();
-							}
-						}
-					});
 					leftScrollPane.setViewportView(viewLeft);
 				}
 			}
@@ -339,7 +472,7 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 		{
 			southPanel = new JPanel();
 			southPanel.setLayout(new BorderLayout());
-			mainPanel.add(southPanel, BorderLayout.SOUTH);
+			panelMain.add(southPanel, BorderLayout.SOUTH);
 			{
 				imageControlsPanel = new JPanel();
 				imageControlsPanel.setLayout(new BorderLayout());
@@ -390,6 +523,17 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 						clearButton.addActionListener(this);
 						clearButtonPanel.add(clearButton);
 					}
+				}
+			}
+			{
+				panelInfo = new JPanel();
+				panelInfo.setBorder(new SoftBevelBorder(BevelBorder.LOWERED));
+				panelInfo.setLayout(new GridLayout(1, 1));
+				southPanel.add(panelInfo, BorderLayout.NORTH);
+				{
+					lblInfo = new JLabel();
+					lblInfo.setText(" ");
+					panelInfo.add(lblInfo);
 				}
 			}
 			{
@@ -494,12 +638,30 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 			if (ev.getSource() == defaultButton) {
 				farComboBox.setSelectedItem(Utils.matchingThresholdToString(FingersTools.getInstance().getDefaultClient().getMatchingThreshold()));
 			} else if (ev.getSource() == verifyButton) {
-				verify();
-			} else if (ev.getSource() == leftOpenButton) {
-				loadItem(SUBJECT_LEFT);
-			} else if (ev.getSource() == rightOpenButton) {
-//				loadItem(SUBJECT_RIGHT);
-			} else if (ev.getSource() == clearButton) {
+				// zmienione verify jak sa dwa obiekty dopiero dziala (chyba xd)
+				if (subject != null && subject.getStatus() == NBiometricStatus.OK && subjectRight != null) {
+					verify();
+				} else {
+					JOptionPane.showMessageDialog(this, "Najpierw zeskanuj odcisk palca i wybierz szablon pracownika.", "Brak danych do weryfikacji", JOptionPane.WARNING_MESSAGE);
+				}
+			}
+//			else if (ev.getSource() == leftOpenButton) {
+//				loadItem(SUBJECT_LEFT);
+//			} else if (ev.getSource() == rightOpenButton) {
+//				loadItem(SUBJECT_RIGHT); }
+
+			//przekopiowane z enrollFromScanner od
+			else if (ev.getSource() == btnRefresh) {
+				updateScannerList();
+			} else if (ev.getSource() == btnScan) {
+				startCapturing();
+			} else if (ev.getSource() == btnCancel) {
+				cancelCapturing();
+			} else if (ev.getSource() == btnForce) {
+				FingersTools.getInstance().getClient().force();
+			}
+			// przekopiowane do
+			else if (ev.getSource() == clearButton) {
 				clear();
 			} else if (ev.getSource() == cbLeftShowBinarized) {
 				if (cbLeftShowBinarized.isSelected()) {
@@ -597,6 +759,62 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 				}
 
 			});
+		}
+
+	}
+
+
+
+//	private void updateShownImage() {
+//		if (cbShowBinarized.isSelected()) {
+//			view.setShownImage(ShownImage.RESULT);
+//		} else {
+//			view.setShownImage(ShownImage.ORIGINAL);
+//		}
+//	}
+
+	private class CaptureCompletionHandler implements CompletionHandler<NBiometricTask, Object> {
+
+		@Override
+		public void completed(final NBiometricTask result, final Object attachment) {
+			SwingUtilities.invokeLater(new Runnable() {
+
+				@Override
+				public void run() {
+					scanning = false;
+					//updateShownImage();
+					if (result.getStatus() == NBiometricStatus.OK) {
+						updateStatus("Quality: " + getSubject().getFingers().get(0).getObjects().get(0).getQuality());
+					} else {
+						updateStatus(result.getStatus().toString());
+					}
+					updateControls();
+				}
+
+			});
+		}
+
+		@Override
+		public void failed(final Throwable th, final Object attachment) {
+			SwingUtilities.invokeLater(new Runnable() {
+
+				@Override
+				public void run() {
+					scanning = false;
+					//updateShownImage();
+					showError(th);
+					updateControls();
+				}
+
+			});
+		}
+
+	}
+	private class ScannerSelectionListener implements ListSelectionListener {
+
+		@Override
+		public void valueChanged(ListSelectionEvent e) {
+			FingersTools.getInstance().getClient().setFingerScanner(getSelectedScanner());
 		}
 
 	}
