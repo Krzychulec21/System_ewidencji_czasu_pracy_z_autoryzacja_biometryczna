@@ -359,40 +359,41 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 					cbAutomatic.setText("Scan automatically");
 					panelButtons.add(cbAutomatic);
 				}
-			}
-			{
-				farPanel = new JPanel();
-				farPanel.setBorder(BorderFactory.createTitledBorder(null, "Matching FAR", TitledBorder.CENTER, TitledBorder.DEFAULT_POSITION));
-				farPanel.setLayout(new GridBagLayout());
-				northPanel.add(farPanel);
 				{
-					char c = new DecimalFormatSymbols().getPercent();
-					DefaultComboBoxModel<String> model = (DefaultComboBoxModel<String>) farComboBox.getModel();
-					NumberFormat nf = NumberFormat.getNumberInstance();
-					nf.setMaximumFractionDigits(5);
-					model.addElement(nf.format(0.1) + c);
-					model.addElement(nf.format(0.01) + c);
-					model.addElement(nf.format(0.001) + c);
-					farComboBox.setSelectedIndex(1);
-					farComboBox.setEditable(true);
-					farComboBox.setModel(model);
-					gridBagConstraints = new GridBagConstraints();
-					gridBagConstraints.gridx = 0;
-					gridBagConstraints.gridy = 0;
-					gridBagConstraints.insets = new Insets(5, 5, 5, 5);
-					farPanel.add(farComboBox, gridBagConstraints);
-				}
-				{
-					defaultButton = new JButton();
-					defaultButton.setText("Default");
-					defaultButton.addActionListener(this);
-					gridBagConstraints = new GridBagConstraints();
-					gridBagConstraints.gridx = 1;
-					gridBagConstraints.gridy = 0;
-					gridBagConstraints.insets = new Insets(3, 3, 3, 3);
-					farPanel.add(defaultButton, gridBagConstraints);
+					farPanel = new JPanel();
+					farPanel.setBorder(BorderFactory.createTitledBorder(null, "Matching FAR", TitledBorder.CENTER, TitledBorder.DEFAULT_POSITION));
+					farPanel.setLayout(new GridBagLayout());
+					panelButtons.add(farPanel);
+					{
+						char c = new DecimalFormatSymbols().getPercent();
+						DefaultComboBoxModel<String> model = (DefaultComboBoxModel<String>) farComboBox.getModel();
+						NumberFormat nf = NumberFormat.getNumberInstance();
+						nf.setMaximumFractionDigits(5);
+						model.addElement(nf.format(0.1) + c);
+						model.addElement(nf.format(0.01) + c);
+						model.addElement(nf.format(0.001) + c);
+						farComboBox.setSelectedIndex(1);
+						farComboBox.setEditable(true);
+						farComboBox.setModel(model);
+						gridBagConstraints = new GridBagConstraints();
+						gridBagConstraints.gridx = 0;
+						gridBagConstraints.gridy = 0;
+						gridBagConstraints.insets = new Insets(5, 5, 5, 5);
+						farPanel.add(farComboBox, gridBagConstraints);
+					}
+					{
+						defaultButton = new JButton();
+						defaultButton.setText("Default");
+						defaultButton.addActionListener(this);
+						gridBagConstraints = new GridBagConstraints();
+						gridBagConstraints.gridx = 1;
+						gridBagConstraints.gridy = 0;
+						gridBagConstraints.insets = new Insets(3, 3, 3, 3);
+						farPanel.add(defaultButton, gridBagConstraints);
+					}
 				}
 			}
+
 //			{
 //				rightOpenButton = new JButton();
 //				rightOpenButton.setText("Open");
