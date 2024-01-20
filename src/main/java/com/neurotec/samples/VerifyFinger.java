@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.text.ParseException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -35,7 +36,11 @@ import com.neurotec.swing.NViewZoomSlider;
 import com.neurotec.util.NIndexPair;
 import com.neurotec.util.concurrent.CompletionHandler;
 import hibernate.dao.EmployeeDao;
+import hibernate.dao.EntryTimeDao;
+import hibernate.dao.ExitTimeDao;
 import hibernate.entity.Employee;
+import hibernate.entity.EntryTime;
+import hibernate.entity.ExitTime;
 
 public final class VerifyFinger extends BasePanel implements ActionListener {
 
@@ -617,6 +622,27 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 	// Package private methods
 	// ===========================================================
 
+	private void registerAttendance(String type) {
+		int selectedRow = employeesTable.getSelectedRow();
+		if (selectedRow != -1) {
+			EmployeeDao dao = new EmployeeDao();
+			List<Employee> employeeList = dao.getEmployees();
+			Employee selectedEmployee = employeeList.get(selectedRow);
+
+			if ("wejście".equals(type)) {
+				EntryTime entryTime = new EntryTime(selectedEmployee, LocalDateTime.now());
+				new EntryTimeDao().addEntryTime(entryTime);
+				JOptionPane.showMessageDialog(this, "Zarejestrowano wejście pracownika: " + selectedEmployee.getFirstName() + " " + selectedEmployee.getLastName());
+			} else if ("wyjście".equals(type)) {
+				ExitTime exitTime = new ExitTime(selectedEmployee, LocalDateTime.now());
+				new ExitTimeDao().addExitTime(exitTime);
+				JOptionPane.showMessageDialog(this, "Zarejestrowano wyjście pracownika: " + selectedEmployee.getFirstName() + " " + selectedEmployee.getLastName());
+			}
+		} else {
+			JOptionPane.showMessageDialog(this, "Nie wybrano pracownika z listy.", "Błąd", JOptionPane.ERROR_MESSAGE);
+		}
+	}
+
 	void updateLabel(String msg) {
 		verifyLabel.setText(msg);
 	}
@@ -689,6 +715,8 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 
 	private class TemplateCreationHandler implements CompletionHandler<NBiometricStatus, String> {
 
+
+
 		@Override
 		public void completed(final NBiometricStatus status, final String subject) {
 			SwingUtilities.invokeLater(new Runnable() {
@@ -722,31 +750,38 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 
 		@Override
 		public void completed(final NBiometricStatus status, final String subject) {
-			SwingUtilities.invokeLater(new Runnable() {
+			SwingUtilities.invokeLater(() -> {
+				if (status == NBiometricStatus.OK) {
+					int score = getLeft().getMatchingResults().get(0).getScore();
+					String msg = "Wynik porównania odcisków: " + score;
+					updateLabel(msg);
 
-				@Override
-				public void run() {
-					if (status == NBiometricStatus.OK) {
-						int score = getLeft().getMatchingResults().get(0).getScore();
-						String msg = "Wynik porównania odcisków: " + score;
-						updateLabel(msg);
-						SwingUtilities.invokeLater(() -> { JOptionPane.showMessageDialog(VerifyFinger.this, msg, "Wynik", JOptionPane.PLAIN_MESSAGE); });
+					// Dodajemy przyciski do dialogu
+					Object[] options = {"Wejście", "Wyjście"};
+					int choice = JOptionPane.showOptionDialog(
+							VerifyFinger.this,
+							"Wynik porównania odcisków: " + score + "\nWybierz akcję:",
+							"Weryfikacja",
+							JOptionPane.YES_NO_OPTION,
+							JOptionPane.PLAIN_MESSAGE,
+							null,
+							options,
+							options[0]
+					);
 
-						NIndexPair[] matedMinutiae = getLeft().getMatchingResults().get(0).getMatchingDetails().getFingers().get(0).getMatedMinutiae();
-
-						viewLeft.setMatedMinutiaIndex(0);
-						viewLeft.setMatedMinutiae(matedMinutiae);
-
-//						viewRight.setMatedMinutiaIndex(1);
-//						viewRight.setMatedMinutiae(matedMinutiae);
-
-						viewLeft.prepareTree();
-//						viewRight.setTree(viewLeft.getTree());
-					} else {
-						SwingUtilities.invokeLater(() -> { JOptionPane.showMessageDialog(VerifyFinger.this, "Odcisk palca nie pasuje do wybranego pracownika.", "Brak powiązania", JOptionPane.WARNING_MESSAGE); });
+					if (choice == JOptionPane.YES_OPTION) {
+						registerAttendance("wejście");
+					} else if (choice == JOptionPane.NO_OPTION) {
+						registerAttendance("wyjście");
 					}
-				}
 
+					NIndexPair[] matedMinutiae = getLeft().getMatchingResults().get(0).getMatchingDetails().getFingers().get(0).getMatedMinutiae();
+					viewLeft.setMatedMinutiae(matedMinutiae);
+					// ... reszta kodu
+
+				} else {
+					JOptionPane.showMessageDialog(VerifyFinger.this, "Odcisk palca nie pasuje do wybranego pracownika.", "Brak powiązania", JOptionPane.WARNING_MESSAGE);
+				}
 			});
 		}
 
