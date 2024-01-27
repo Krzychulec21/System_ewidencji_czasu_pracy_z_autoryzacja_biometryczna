@@ -567,7 +567,7 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 				{
 					verifyButton = new JButton();
 					verifyButton.setText("Verify");
-					verifyButton.setEnabled(false);
+					verifyButton.setEnabled(true);
 					verifyButton.addActionListener(this);
 					verifyPanel.add(verifyButton);
 				}
@@ -597,7 +597,7 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 			|| (subjectLeft.getFingers().get(0).getObjects().get(0).getTemplate() == null)
 			|| subjectRight.getFingers().isEmpty()
 			|| (subjectRight.getFingers().get(0).getObjects().get(0).getTemplate() == null)) {
-			verifyButton.setEnabled(false);
+			verifyButton.setEnabled(true);
 		} else {
 			verifyButton.setEnabled(true);
 		}
@@ -664,7 +664,32 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 		try {
 			if (ev.getSource() == defaultButton) {
 				farComboBox.setSelectedItem(Utils.matchingThresholdToString(FingersTools.getInstance().getDefaultClient().getMatchingThreshold()));
-			} else if (ev.getSource() == verifyButton) {
+			}
+			else if (ev.getSource() == verifyButton) {
+				// Symulacja pomyślnej weryfikacji bez skanowania
+				int score = 100; // Przykładowa wartość wyniku
+				String msg = "Wynik porównania odcisków: " + score;
+
+				// Dodajemy przyciski do dialogu
+				Object[] options = {"Wejście", "Wyjście"};
+				int choice = JOptionPane.showOptionDialog(
+						VerifyFinger.this,
+						"Wynik porównania odcisków: " + score + "\nWybierz akcję:",
+						"Weryfikacja",
+						JOptionPane.YES_NO_OPTION,
+						JOptionPane.PLAIN_MESSAGE,
+						null,
+						options,
+						options[0]
+				);
+
+				if (choice == JOptionPane.YES_OPTION) {
+					registerAttendance("wejście");
+				} else if (choice == JOptionPane.NO_OPTION) {
+					registerAttendance("wyjście");
+				}
+			}
+			else if (ev.getSource() == verifyButton) {
 				// zmienione verify jak sa dwa obiekty dopiero dziala (chyba xd)
 				if (subject != null && subject.getStatus() == NBiometricStatus.OK && subjectRight != null) {
 					verify();
