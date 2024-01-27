@@ -39,24 +39,24 @@ public final class SimpleFingersApplication {
 			e.printStackTrace();
 		}
 
-		EmployeeDao dao = new EmployeeDao();
+//		EmployeeDao dao = new EmployeeDao();
+//
+//		Employee emp1 = new Employee("Wojciech", "Olejko", path+"Wojciech_Olejko");
+//		Employee emp2 = new Employee("Krzysztof", "Kaczka", path+"Krzysztof_Kaczka");
+//
+//		dao.addEmployee(emp1);
+//		dao.addEmployee(emp2);
 
-		Employee emp1 = new Employee("Wojciech", "Olejko", path+"wojtek_index");
-		Employee emp2 = new Employee("Krzysztof", "Kaczka", path+"krzychu_index");
-
-		dao.addEmployee(emp1);
-		dao.addEmployee(emp2);
-
-		for (Employee emp : dao.getEmployees()) {
-			System.out.println(emp);
-		}
+//		for (Employee emp : dao.getEmployees()) {
+//			System.out.println(emp);
+//		}
 
 		SwingUtilities.invokeLater(new Runnable() {
 
 			@Override
 			public void run() {
                 JFrame frame = new JFrame();
-				frame.setTitle("Simple Fingers Sample");
+				frame.setTitle("System ewidencji pracy");
 				frame.setIconImage(Utils.createIconImage("images/Logo16x16.png"));
 				frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 				frame.add(new MainPanel(), BorderLayout.CENTER);

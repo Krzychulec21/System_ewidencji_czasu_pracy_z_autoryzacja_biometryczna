@@ -46,21 +46,21 @@ public final class MainPanel extends JPanel implements ChangeListener {
 		tabbedPane = new JTabbedPane();
 		tabbedPane.addChangeListener(this);
 
-		enrollFromImage = new EnrollFromImage();
-		enrollFromImage.init();
-		tabbedPane.addTab("Enroll from image", enrollFromImage);
+//		enrollFromImage = new EnrollFromImage();
+//		enrollFromImage.init();
+//		tabbedPane.addTab("Enroll from image", enrollFromImage);
 
 		enrollFromScanner = new EnrollFromScanner();
 		enrollFromScanner.init();
-		tabbedPane.addTab("Enroll from scanner", enrollFromScanner);
+		tabbedPane.addTab("Dodaj pracownika", enrollFromScanner);
 
-		identifyFinger = new IdentifyFinger();
-		identifyFinger.init();
-		tabbedPane.addTab("Identify finger", identifyFinger);
+//		identifyFinger = new IdentifyFinger();
+//		identifyFinger.init();
+//		tabbedPane.addTab("Identyfikacja odcisków", identifyFinger);
 
 		verifyFinger = new VerifyFinger();
 		verifyFinger.init();
-		tabbedPane.addTab("Verify finger", verifyFinger);
+		tabbedPane.addTab("Weryfikacja odcisków", verifyFinger);
 
 		add(tabbedPane);
 		setPreferredSize(new Dimension(680, 600));
@@ -90,23 +90,23 @@ public final class MainPanel extends JPanel implements ChangeListener {
 		if (evt.getSource() == tabbedPane) {
 			try {
 				switch (tabbedPane.getSelectedIndex()) {
+//				case 0: {
+//					obtainLicenses(enrollFromImage);
+//					enrollFromImage.updateFingersTools();
+//					break;
+//				}
 				case 0: {
-					obtainLicenses(enrollFromImage);
-					enrollFromImage.updateFingersTools();
-					break;
-				}
-				case 1: {
 					obtainLicenses(enrollFromScanner);
 					enrollFromScanner.updateFingersTools();
 					enrollFromScanner.updateScannerList();
 					break;
 				}
-				case 2: {
-					obtainLicenses(identifyFinger);
-					identifyFinger.updateFingersTools();
-					break;
-				}
-				case 3: {
+//				case 2: {
+//					obtainLicenses(identifyFinger);
+//					identifyFinger.updateFingersTools();
+//					break;
+//				}
+				case 1: {
 					obtainLicenses(verifyFinger);
 					verifyFinger.updateFingersTools();
 					break;
