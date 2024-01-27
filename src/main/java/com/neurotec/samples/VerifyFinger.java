@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Locale;
 
 import javax.swing.*;
 import javax.swing.Box.Filler;
@@ -22,6 +23,7 @@ import javax.swing.border.SoftBevelBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.table.DefaultTableModel;
 
 import com.neurotec.biometrics.*;
 import com.neurotec.biometrics.swing.NFingerView;
@@ -62,6 +64,10 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 			"Imie",
 			"Nazwisko",
 	};
+
+	public List<Employee> employeeList;
+
+	public Object[][] employees;
 
 	// ===========================================================
 	// Private fields
@@ -110,7 +116,6 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 	private JTable employeesTable;
 
 	//krzycha
-	private NSubject subject;
 	private final NDeviceManager deviceManager;
 	private boolean scanning;
 	private final CaptureCompletionHandler captureCompletionHandler = new CaptureCompletionHandler();
@@ -146,6 +151,9 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 		deviceManager = FingersTools.getInstance().getClient().getDeviceManager();
 		deviceManager.setDeviceTypes(EnumSet.of(NDeviceType.FINGER_SCANNER));
 		deviceManager.initialize();
+
+		EmployeeDao dao = new EmployeeDao();
+		employeeList = dao.getEmployees();
 	}
 
 	// ===========================================================
@@ -157,7 +165,7 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 	}
 
 	NSubject getSubject() {
-		return subject;
+		return subjectLeft;
 	}
 
 	NFingerScanner getSelectedScanner() {
@@ -186,33 +194,57 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 		FingersTools.getInstance().getClient().cancel();
 	}
 
+	private void updateTable() {
+		EmployeeDao dao = new EmployeeDao();
+		this.employeeList = dao.getEmployees();
+		employees = new Object[employeeList.size()][3];
+
+		for (int i = 0; i < employeeList.size(); i++) {
+			employees[i][0] = employeeList.get(i).getId();
+			employees[i][1] = employeeList.get(i).getFirstName();
+			employees[i][2] = employeeList.get(i).getLastName();
+		}
+
+		DefaultTableModel model = new DefaultTableModel(employees, employeesTableColumns);
+		employeesTable.setModel(model);
+		employeesTable.updateUI();
+	}
+
+
 	private void startCapturing() {
 		lblInfo.setText("");
 		if (FingersTools.getInstance().getClient().getFingerScanner() == null) {
-			SwingUtilities.invokeLater(() -> { JOptionPane.showMessageDialog(this, "Please select scanner from the list.", "No scanner selected", JOptionPane.PLAIN_MESSAGE); });
+			SwingUtilities.invokeLater(() -> {
+				JOptionPane.showMessageDialog(this, "Proszę wybrać skaner z listy.", "Nie wybrano skanera", JOptionPane.PLAIN_MESSAGE);
+			});
 			return;
 		}
 
-		// Create a finger.
+		// Resetuj NSubject i widok przed rozpoczęciem nowego skanowania
+		subjectLeft.clear();
+		viewLeft.setFinger(null);
+		viewLeft.setShownImage(ShownImage.ORIGINAL);
+
+		// Utwórz nowy odcisk palca
 		NFinger finger = new NFinger();
 
-		// Set Manual capturing mode if automatic isn't selected.
+		// Ustaw opcje skanowania
 		if (!cbAutomatic.isSelected()) {
 			finger.setCaptureOptions(EnumSet.of(NBiometricCaptureOption.MANUAL));
 		}
 
-		// Add finger to subject and finger view.
-		subject = new NSubject();
-		subject.getFingers().add(finger);
-		view.setFinger(finger);
-		view.setShownImage(ShownImage.ORIGINAL);
+		// Dodaj odcisk do NSubject i widoku
+		subjectLeft.getFingers().add(finger);
+		viewLeft.setFinger(finger);
+		viewLeft.setShownImage(ShownImage.ORIGINAL);
 
-		// Begin capturing.
-		NBiometricTask task = FingersTools.getInstance().getClient().createTask(EnumSet.of(NBiometricOperation.CAPTURE, NBiometricOperation.CREATE_TEMPLATE), subject);
+		// Rozpocznij skanowanie
+		NBiometricTask task = FingersTools.getInstance().getClient().createTask(EnumSet.of(NBiometricOperation.CAPTURE, NBiometricOperation.CREATE_TEMPLATE), subjectLeft);
 		FingersTools.getInstance().getClient().performTask(task, null, captureCompletionHandler);
 		scanning = true;
 		updateControls();
 	}
+
 
 //	private void loadItem(String position) throws IOException {
 //		fileChooser.setMultiSelectionEnabled(false);
@@ -260,14 +292,14 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 
 	private void verify() {
 		updateFingersTools();
-		FingersTools.getInstance().getClient().verify(subject, subjectRight, null, verificationHandler);
+		FingersTools.getInstance().getClient().verify(subjectLeft, subjectRight, null, verificationHandler);
 	}
 
 	private void clear() {
 		viewLeft.setFinger(null);
-		viewRight.setFinger(null);
+//		viewRight.setFinger(null);
 		subjectLeft.clear();
-		subjectRight.clear();
+//		subjectRight.clear();
 		updateControls();
 		verifyLabel.setText(" ");
 		leftLabel.setText(LEFT_LABEL_TEXT);
@@ -312,7 +344,7 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 //				northPanel.add(leftOpenButton);
 //			}
 			panelScanners = new JPanel();
-			panelScanners.setBorder(BorderFactory.createTitledBorder("Scanners list"));
+			panelScanners.setBorder(BorderFactory.createTitledBorder("Lista skanerów"));
 			panelScanners.setLayout(new BorderLayout());
 			panelMain.add(panelScanners, BorderLayout.NORTH);
 			{
@@ -335,13 +367,13 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 				panelScanners.add(panelButtons, BorderLayout.SOUTH);
 				{
 					btnRefresh = new JButton();
-					btnRefresh.setText("Refresh list");
+					btnRefresh.setText("Odśwież listę");
 					btnRefresh.addActionListener(this);
 					panelButtons.add(btnRefresh);
 				}
 				{
 					btnScan = new JButton();
-					btnScan.setText("Scan");
+					btnScan.setText("Skanuj");
 					btnScan.addActionListener(this);
 					panelButtons.add(btnScan);
 				}
@@ -354,19 +386,19 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 				}
 				{
 					btnForce = new JButton();
-					btnForce.setText("Force");
+					btnForce.setText("Odswiez");
 					btnForce.addActionListener(this);
 					panelButtons.add(btnForce);
 				}
 				{
 					cbAutomatic = new JCheckBox();
 					cbAutomatic.setSelected(true);
-					cbAutomatic.setText("Scan automatically");
+					cbAutomatic.setText("Skanuj automatycznie");
 					panelButtons.add(cbAutomatic);
 				}
 				{
 					farPanel = new JPanel();
-					farPanel.setBorder(BorderFactory.createTitledBorder(null, "Matching FAR", TitledBorder.CENTER, TitledBorder.DEFAULT_POSITION));
+					farPanel.setBorder(BorderFactory.createTitledBorder(null, "Stopień FAR", TitledBorder.CENTER, TitledBorder.DEFAULT_POSITION));
 					farPanel.setLayout(new GridBagLayout());
 					panelButtons.add(farPanel);
 					{
@@ -388,7 +420,7 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 					}
 					{
 						defaultButton = new JButton();
-						defaultButton.setText("Default");
+						defaultButton.setText("Domyślny");
 						defaultButton.addActionListener(this);
 						gridBagConstraints = new GridBagConstraints();
 						gridBagConstraints.gridx = 1;
@@ -427,22 +459,15 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 				rightScrollPane.setBorder(BorderFactory.createTitledBorder("Pracownicy"));
 				centerPanel.add(rightScrollPane);
 				{
-					EmployeeDao dao = new EmployeeDao();
-
-					List<Employee> employeeList = dao.getEmployees();
-					Object[][] employees = new Object[employeeList.size()][3];
-
-					for (int i = 0; i < employeeList.size(); i++) {
-						employees[i][0] = employeeList.get(i).getId();
-						employees[i][1] = employeeList.get(i).getFirstName();
-						employees[i][2] = employeeList.get(i).getLastName();
-					}
+					employees = new Object[employeeList.size()][3];
 
 					employeesTable = new JTable(employees, employeesTableColumns);
 					employeesTable.setDefaultEditor(Object.class, null);
 					employeesTable.setFillsViewportHeight(true);
 					employeesTable.setVisible(true);
 					rightScrollPane.setViewportView(employeesTable);
+
+					updateTable();
 
 					employeesTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
 						@Override
@@ -498,7 +523,7 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 						}
 						{
 							cbLeftShowBinarized = new JCheckBox();
-							cbLeftShowBinarized.setText("Show binarized image");
+							cbLeftShowBinarized.setText("Pokaz przetworzony obraz");
 							cbLeftShowBinarized.addActionListener(this);
 							leftBinarizedPanel.add(cbLeftShowBinarized, BorderLayout.CENTER);
 						}
@@ -525,7 +550,7 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 					imageControlsPanel.add(clearButtonPanel, BorderLayout.CENTER);
 					{
 						clearButton = new JButton();
-						clearButton.setText("Clear images");
+						clearButton.setText("Wyczyść zdjęcie");
 						clearButton.addActionListener(this);
 						clearButtonPanel.add(clearButton);
 					}
@@ -535,7 +560,7 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 				panelInfo = new JPanel();
 				panelInfo.setBorder(new SoftBevelBorder(BevelBorder.LOWERED));
 				panelInfo.setLayout(new GridLayout(1, 1));
-				southPanel.add(panelInfo, BorderLayout.NORTH);
+				southPanel.add(panelInfo, BorderLayout.SOUTH);
 				{
 					lblInfo = new JLabel();
 					lblInfo.setText(" ");
@@ -566,7 +591,7 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 				}
 				{
 					verifyButton = new JButton();
-					verifyButton.setText("Verify");
+					verifyButton.setText("Weryfikacja");
 					verifyButton.setEnabled(false);
 					verifyButton.addActionListener(this);
 					verifyPanel.add(verifyButton);
@@ -614,7 +639,7 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 			e.printStackTrace();
 			FingersTools.getInstance().getClient().setMatchingThreshold(FingersTools.getInstance().getDefaultClient().getMatchingThreshold());
 			farComboBox.setSelectedItem(Utils.matchingThresholdToString(FingersTools.getInstance().getDefaultClient().getMatchingThreshold()));
-			SwingUtilities.invokeLater(() -> { JOptionPane.showMessageDialog(this, "FAR is not valid. Using default value.", "Error", JOptionPane.ERROR_MESSAGE); });
+			SwingUtilities.invokeLater(() -> { JOptionPane.showMessageDialog(this, "FAR jest nieprawidłowy. Zmiana na wartość domyślną.", "Error", JOptionPane.ERROR_MESSAGE); });
 		}
 	}
 
@@ -625,8 +650,6 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 	private void registerAttendance(String type) {
 		int selectedRow = employeesTable.getSelectedRow();
 		if (selectedRow != -1) {
-			EmployeeDao dao = new EmployeeDao();
-			List<Employee> employeeList = dao.getEmployees();
 			Employee selectedEmployee = employeeList.get(selectedRow);
 
 			if ("wejście".equals(type)) {
@@ -666,7 +689,7 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 				farComboBox.setSelectedItem(Utils.matchingThresholdToString(FingersTools.getInstance().getDefaultClient().getMatchingThreshold()));
 			} else if (ev.getSource() == verifyButton) {
 				// zmienione verify jak sa dwa obiekty dopiero dziala (chyba xd)
-				if (subject != null && subject.getStatus() == NBiometricStatus.OK && subjectRight != null) {
+				if (subjectLeft != null && subjectLeft.getStatus() == NBiometricStatus.OK && subjectRight != null) {
 					verify();
 				} else {
 					JOptionPane.showMessageDialog(this, "Najpierw zeskanuj odcisk palca i wybierz szablon pracownika.", "Brak danych do weryfikacji", JOptionPane.WARNING_MESSAGE);
@@ -685,7 +708,8 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 			} else if (ev.getSource() == btnCancel) {
 				cancelCapturing();
 			} else if (ev.getSource() == btnForce) {
-				FingersTools.getInstance().getClient().force();
+//				FingersTools.getInstance().getClient().force();
+				updateTable();
 			}
 			// przekopiowane do
 			else if (ev.getSource() == clearButton) {
@@ -705,7 +729,7 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			SwingUtilities.invokeLater(() -> { JOptionPane.showMessageDialog(this, e, "Error", JOptionPane.ERROR_MESSAGE); });
+			SwingUtilities.invokeLater(() -> { JOptionPane.showMessageDialog(this, e, "Błąd", JOptionPane.ERROR_MESSAGE); });
 		}
 	}
 
@@ -724,7 +748,7 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 				@Override
 				public void run() {
 					if (status != NBiometricStatus.OK) {
-						SwingUtilities.invokeLater(() -> { JOptionPane.showMessageDialog(VerifyFinger.this, "Template was not created: " + status, "Error", JOptionPane.WARNING_MESSAGE); });
+						SwingUtilities.invokeLater(() -> { JOptionPane.showMessageDialog(VerifyFinger.this, "Obraz nie został utworzony" + status, "Błąd", JOptionPane.WARNING_MESSAGE); });
 					}
 					updateControls();
 				}
@@ -756,6 +780,11 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 					String msg = "Wynik porównania odcisków: " + score;
 					updateLabel(msg);
 
+					NIndexPair[] matedMinutiae = getLeft().getMatchingResults().get(0).getMatchingDetails().getFingers().get(0).getMatedMinutiae();
+					viewLeft.setMatedMinutiaIndex(0);
+					viewLeft.setMatedMinutiae(matedMinutiae);
+					viewLeft.prepareTree();
+
 					// Dodajemy przyciski do dialogu
 					Object[] options = {"Wejście", "Wyjście"};
 					int choice = JOptionPane.showOptionDialog(
@@ -775,8 +804,6 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 						registerAttendance("wyjście");
 					}
 
-					NIndexPair[] matedMinutiae = getLeft().getMatchingResults().get(0).getMatchingDetails().getFingers().get(0).getMatedMinutiae();
-					viewLeft.setMatedMinutiae(matedMinutiae);
 					// ... reszta kodu
 
 				} else {
@@ -800,7 +827,6 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 	}
 
 
-
 //	private void updateShownImage() {
 //		if (cbShowBinarized.isSelected()) {
 //			view.setShownImage(ShownImage.RESULT);
@@ -820,7 +846,7 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 					scanning = false;
 					//updateShownImage();
 					if (result.getStatus() == NBiometricStatus.OK) {
-						updateStatus("Quality: " + getSubject().getFingers().get(0).getObjects().get(0).getQuality());
+						updateStatus("Jakość: " + getSubject().getFingers().get(0).getObjects().get(0).getQuality());
 					} else {
 						updateStatus(result.getStatus().toString());
 					}
