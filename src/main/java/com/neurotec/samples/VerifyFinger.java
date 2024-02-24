@@ -481,7 +481,6 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
                                 } catch (IOException e) {
                                     throw new RuntimeException(e);
                                 }
-//								System.out.println(employeesTable.getValueAt(employeesTable.getSelectedRow(), 0).toString());
 							}
 						}
 					});
@@ -803,8 +802,6 @@ public final class VerifyFinger extends BasePanel implements ActionListener {
 					} else if (choice == JOptionPane.NO_OPTION) {
 						registerAttendance("wyjście");
 					}
-
-					// ... reszta kodu
 
 				} else {
 					JOptionPane.showMessageDialog(VerifyFinger.this, "Odcisk palca nie pasuje do wybranego pracownika.", "Brak powiązania", JOptionPane.WARNING_MESSAGE);

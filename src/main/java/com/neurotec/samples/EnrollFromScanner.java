@@ -498,7 +498,7 @@ public final class EnrollFromScanner extends BasePanel implements ActionListener
 	}
 	private void saveEmployeeTemplate(String firstName, String lastName) {
 		if (subject != null && subject.getStatus() == NBiometricStatus.OK) {
-			//sceizka do zapisu templata
+			//sciezka do zapisu templata
 			String templateName = String.format("%s_%s", firstName, lastName);
 			String templatePath = "./src/main/resources/templates/" + templateName;
 
